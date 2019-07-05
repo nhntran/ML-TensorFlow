@@ -31,11 +31,11 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 import numpy as np
 from keras.preprocessing import image
 
-# class myCallback(tf.keras.callbacks.Callback):
-#     def on_epoch_end(self, epoch, logs={}):
-#         if(logs.get('acc')>0.98):
-#             print("\nReached 98% accuracy so cancelling training!")
-#             self.model.stop_training=True
+class myCallback(tf.keras.callbacks.Callback):
+    def on_epoch_end(self, epoch, logs={}):
+        if(logs.get('acc')>0.98):
+            print("\nReached 98% accuracy so cancelling training!")
+            self.model.stop_training=True
 
 def check_display_data(local_path1, local_path2):
     
@@ -94,6 +94,7 @@ def generating_data(local_path1, local_path2):
     return train_gen, validation_gen
 
 def building_model(local_path1, local_path2):
+    callbacks = myCallback()
     model = tf.keras.models.Sequential([
         ## 5 levels of convolutions - 1st convolution
         tf.keras.layers.Conv2D(16, (3,3), activation = 'relu',
@@ -130,9 +131,10 @@ def building_model(local_path1, local_path2):
 
     history = model.fit_generator(
         train_generator, steps_per_epoch = 8,
-        epochs = 3, verbose = 1,
+        epochs = 15, verbose = 1,
         validation_data = validation_generator,
-        validation_steps = 8
+        validation_steps = 8,
+        callbacks = [callbacks]
         )
 
     return model
@@ -143,7 +145,7 @@ def prediction_human_horse(local_path3, model):
 
     for fn in prediction_names:
      
-      img = image.load_img(local_path3+fn, target_size=(150, 150))
+      img = image.load_img(local_path3+fn, target_size=(300, 300))
       x = image.img_to_array(img)
       x = np.expand_dims(x, axis=0)
 
@@ -161,9 +163,9 @@ def prediction_human_horse(local_path3, model):
 def main():
     
     #print(tf.__version__)
-    local_path1 = 'data/horse-or-human/'
-    local_path2 = 'data/validation-horse-or-human/'
-    local_path3 = 'data/prediction/'
+    local_path1 = 'data/horse-human-data/horse-or-human/'
+    local_path2 = 'data/horse-human-data/validation-horse-or-human/'
+    local_path3 = 'data/horse-human-data/prediction/'
     check_display_data(local_path1, local_path2)
     model = building_model(local_path1, local_path2)
     prediction_human_horse(local_path3, model)
