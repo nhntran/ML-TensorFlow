@@ -45,7 +45,7 @@ def main():
     print(y)
 
     #Loading the model again
-    new_model = keras.models.load_model('TF_saving.h5')
+    new_model = tf.keras.models.load_model('TF_saving.h5')
     new_model.summary()
     y2=new_model.predict([10.0])
     print(y2)

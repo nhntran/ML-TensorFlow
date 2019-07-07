@@ -44,12 +44,16 @@ def check_display_data(local_path1, local_path2):
     train_horse_names = os.listdir(train_horse_dir)
     train_human_dir = os.path.join(local_path1 + 'humans')
     train_human_names = os.listdir(train_human_dir)
+
     validation_horse_dir = os.path.join(local_path2 + 'horses')
     validation_horse_names = os.listdir(train_horse_dir)
+    validation_horse_dir = os.path.join(local_path2 + 'human')
+    validation_human_names = os.listdir(train_human_dir)
+
     print('Total training horse images:',len(train_horse_names))
     print('Total training human images:', len(train_human_names))
-    print('Total validation horse images:',len(train_horse_names))
-    print('Total validation human images:', len(train_human_names))
+    print('Total validation horse images:',len(validation_horse_names))
+    print('Total validation human images:', len(validation_human_names))
     ### display the data
     #need matplotlib
     #Ouput images in a 4x4 configuration

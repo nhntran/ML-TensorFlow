@@ -9,10 +9,15 @@
 ### Dogs vs Cats - Kaggle Problem, the two-class classification problem
 # Input: 2,000 images 300x300 with 3 bytes color: input_shape=(300, 300, 3)
 
-#Download the data for the test
+#Download the data for the test (around 1k images)
 #!wget --no-check-certificate \
 #  https://storage.googleapis.com/mledu-datasets/cats_and_dogs_filtered.zip \
 #  -O /tmp/cats_and_dogs_filtered.zip
+
+#Download the real data  (around 25k images)
+#!wget --no-check-certificate \
+    # "https://download.microsoft.com/download/3/E/1/3E1C3F21-ECDB-4869-8368-6DEBA77B919F/kagglecatsanddogs_3367a.zip" \
+    # -O "/tmp/cats-and-dogs.zip"
 
 import os
 import matplotlib.pyplot as plt
@@ -24,26 +29,31 @@ from tensorflow.keras.optimizers import RMSprop
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 import numpy as np
 from keras.preprocessing import image
+import h5py
 
 class myCallback(tf.keras.callbacks.Callback):
     def on_epoch_end(self, epoch, logs={}):
-        if(logs.get('acc')>0.98):
-            print("\nReached 98% accuracy so cancelling training!")
+        if(logs.get('acc')>0.99):
+            print("\nReached 99% accuracy so cancelling training!")
             self.model.stop_training=True
 
-def check_display_data(local_path1, local_path2):
+def check_display_data(local_path1):
     
     ### checking the data
-    train_horse_dir = os.path.join(local_path1 + 'horses')
-    train_horse_names = os.listdir(train_horse_dir)
-    train_human_dir = os.path.join(local_path1 + 'humans')
-    train_human_names = os.listdir(train_human_dir)
-    validation_horse_dir = os.path.join(local_path2 + 'horses')
-    validation_horse_names = os.listdir(train_horse_dir)
-    print('Total training horse images:',len(train_horse_names))
-    print('Total training human images:', len(train_human_names))
-    print('Total validation horse images:',len(train_horse_names))
-    print('Total validation human images:', len(train_human_names))
+    train_cat_dir = os.path.join(local_path1 + 'train/cats')
+    train_cat_names = os.listdir(train_cat_dir)
+    train_dog_dir = os.path.join(local_path1 + 'train/dogs')
+    train_dog_names = os.listdir(train_dog_dir)
+
+    validation_cat_dir = os.path.join(local_path1 + 'validation/cats')
+    validation_cat_names = os.listdir(train_cat_dir)
+    validation_dog_dir = os.path.join(local_path1 + 'validation/dogs')
+    validation_dog_names = os.listdir(train_dog_dir)
+
+    print('Total training cat images:',len(train_cat_names))
+    print('Total training dog images:', len(train_dog_names))
+    print('Total validation cat images:',len(validation_cat_names))
+    print('Total validation dog images:', len(validation_dog_names))
     ### display the data
     #need matplotlib
     #Ouput images in a 4x4 configuration
@@ -54,12 +64,12 @@ def check_display_data(local_path1, local_path2):
     fig.set_size_inches(ncols * 4, nrows * 4)
     pic_index = 0
     pic_index +=8
-    next_horse_pic = [os.path.join(train_horse_dir,fname)
-                        for fname in train_horse_names[pic_index-8:pic_index]]
-    next_human_pic = [os.path.join(train_human_dir,fname)
-                        for fname in train_human_names[pic_index-8:pic_index]]
+    next_cat_pic = [os.path.join(train_cat_dir,fname)
+                        for fname in train_cat_names[pic_index-8:pic_index]]
+    next_dog_pic = [os.path.join(train_dog_dir,fname)
+                        for fname in train_dog_names[pic_index-8:pic_index]]
 
-    for i, img_path in enumerate(next_horse_pic + next_human_pic):
+    for i, img_path in enumerate(next_cat_pic + next_dog_pic):
         sp = plt.subplot(nrows, ncols, i+1)
         #sp.axis('Off') # Don't show axes (or gridlines)
 
@@ -67,43 +77,38 @@ def check_display_data(local_path1, local_path2):
         plt.imshow(img)
 
     plt.show()
+    #plt.savefig("myplotdoesnotshowup.png")
 
-def generating_data(local_path1, local_path2):
+def generating_data(local_path1):
     train_datagen = ImageDataGenerator(rescale = 1/255)
     validation_datagen = ImageDataGenerator(rescale = 1/255)
 
     train_gen = train_datagen.flow_from_directory(
-        local_path1,
-        target_size = (300,300),
-        batch_size = 128, #training image in batch of 128 images
+        local_path1 + 'train/',
+        target_size = (150,150),
+        batch_size = 20, #training image in batch of 128 images
         class_mode = 'binary'
         )
 
     validation_gen = validation_datagen.flow_from_directory(
-        local_path2,
-        target_size = (300,300),
-        batch_size = 32, #training image in batch of 32 images
+        local_path1 + 'validation/',
+        target_size = (150,150),
+        batch_size = 20, #training image in batch of 32 images
         class_mode = 'binary'
         )
     return train_gen, validation_gen
 
-def building_model(local_path1, local_path2):
+def building_model(local_path1):
     callbacks = myCallback()
     model = tf.keras.models.Sequential([
         ## 5 levels of convolutions - 1st convolution
         tf.keras.layers.Conv2D(16, (3,3), activation = 'relu',
-            input_shape = (300, 300, 3)),
+            input_shape = (150, 150, 3)),
         tf.keras.layers.MaxPooling2D(2,2),
         ## 2nd convolution
         tf.keras.layers.Conv2D(32, (3,3), activation = 'relu'),
         tf.keras.layers.MaxPooling2D(2,2),
         ## 3rd convolution
-        tf.keras.layers.Conv2D(64, (3,3), activation = 'relu'),
-        tf.keras.layers.MaxPooling2D(2,2),
-        ## 4th convolution
-        tf.keras.layers.Conv2D(64, (3,3), activation = 'relu'),
-        tf.keras.layers.MaxPooling2D(2,2),
-        ## 5th convolution
         tf.keras.layers.Conv2D(64, (3,3), activation = 'relu'),
         tf.keras.layers.MaxPooling2D(2,2),
         ## Flatten the result
@@ -121,25 +126,50 @@ def building_model(local_path1, local_path2):
                     optimizer = RMSprop(lr = 0.001), #learning rate: 0.001
                     metrics = ['acc'])
     
-    train_generator, validation_generator=generating_data(local_path1, local_path2)
+    train_generator, validation_generator=generating_data(local_path1)
 
     history = model.fit_generator(
-        train_generator, steps_per_epoch = 8,
-        epochs = 15, verbose = 1,
+        train_generator, steps_per_epoch = 100,
+        epochs = 10, verbose = 2,
         validation_data = validation_generator,
-        validation_steps = 8,
+        validation_steps = 50,
         callbacks = [callbacks]
         )
+    #verbose=2: Note the values per epoch (loss, accuracy, 
+    #validation loss, validation accuracy)
+    ## retrieve values
+    acc = history.history['acc']
+    val_acc = history.history['val_acc']
+    loss = history.history['loss']
+    val_loss = history.history['val_loss']
+
+    #evaluate the model
+    model_evaluation(acc, val_acc, loss, val_loss)
+    ## save model
+    model.save('TF_Dogs_Cats.h5') #after training, saving the model into the .h5 file
 
     return model
 
-def prediction_human_horse(local_path3, model):
-    prediction_dir = os.path.join(local_path3)
+def model_evaluation(acc, val_acc, loss, val_loss):
+    epochs = range(len(acc)) #get number of epochs
+
+    #plot training and validation accuracy and loss
+    plt.plot(epochs,acc)
+    plt.plot(epochs,val_acc)
+    plt.title("Training and validation accuracy")
+
+    plt.plot(epochs,loss)
+    plt.plot(epochs,val_loss)
+    plt.title("Training and validation loss")
+
+
+def prediction_cat_dog(local_path2, model):
+    prediction_dir = os.path.join(local_path2)
     prediction_names = os.listdir(prediction_dir)
 
     for fn in prediction_names:
      
-      img = image.load_img(local_path3+fn, target_size=(300, 300))
+      img = image.load_img(local_path2+fn, target_size=(150, 150))
       x = image.img_to_array(img)
       x = np.expand_dims(x, axis=0)
 
@@ -148,21 +178,28 @@ def prediction_human_horse(local_path3, model):
       print(classes[0])
 
       if classes[0]>0.5:
-        print(fn + " is a human")
+        print(fn + " is a dog")
       else:
-        print(fn + " is a horse")
+        print(fn + " is a cat")
+
+
 
 ########################################################################
 # The main() function
 def main():
     
     #print(tf.__version__)
-    local_path1 = 'data/horse-human-data/horse-or-human/'
-    local_path2 = 'data/horse-human-data/validation-horse-or-human/'
-    local_path3 = 'data/horse-human-data/prediction/'
-    check_display_data(local_path1, local_path2)
-    model = building_model(local_path1, local_path2)
-    prediction_human_horse(local_path3, model)
+    local_path1 = 'data/dog-cat-data/cats_and_dogs_filtered/'
+    local_path2 = 'data/dog-cat-data/cat_dog_prediction/'
+
+    # First time running: training model
+    check_display_data(local_path1)
+    model = building_model(local_path1)
+    prediction_cat_dog(local_path2, model)
+
+    # Second time running: Loading the model again
+    # new_model = tf.keras.models.load_model('TF_Dogs_Cats.h5')
+    # prediction_cat_dog(local_path2, new_model)
 
 #######################################################################
 # Standard boilerplate to call the main() function to begin
