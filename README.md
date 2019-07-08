@@ -139,4 +139,4 @@ MODEL EVALUATION
 
 <img src="./img/model_evaluation1.png" width="772" style="display: block; margin: auto;" />
 
-<img src="./img/model_evaluation2.png" width="785" style="display: block; margin: auto;" />
+<img src="./img/model_evaluation2" width="785" style="display: block; margin: auto;" />
